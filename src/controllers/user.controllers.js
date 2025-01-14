@@ -101,13 +101,13 @@ const loginUser = asyncHandler(async (req, res) => {
     })
 
     if (!user) {
-        throw new ApiError(400, "User Not found");
+        throw new ApiError(404, "User Not found");
 
     }
 
     // Check For Password if it is coreect or not
-    const passwordValid = await User.isPasswordCorrect(password);
-    console.log(passwordValid);
+    const passwordValid = await user.isPasswordCorrect(password);
+    // console.log(passwordValid);
 
     if (!passwordValid) {
         throw new ApiError(401, "Entered Password is wrong check again");
@@ -116,7 +116,7 @@ const loginUser = asyncHandler(async (req, res) => {
     // Getting access and refresh token from generating method
     const {accessToken, refreshToken}= await generateAccessTokenAndRefreshToken(user._id);
 
-    const logedInUser=await User.findById(user_id).select("-password", "-refreshToken");
+    const logedInUser=await User.findById(user._id).select("-password -refreshToken");
 
     // options for cookies security which is saved in server only
     const options={
@@ -149,8 +149,8 @@ const logOutUser=asyncHandler(async(req, res)=>{
     }
     return res
     .status(200)
-    .clearCookie(accessToken, options)
-    .clearCookie(refreshToken, options)
+    .clearCookie("accessToken", options)
+    .clearCookie("refreshToken", options)
     .json(
         new ApiResponse(
             200,

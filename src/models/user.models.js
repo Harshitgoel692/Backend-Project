@@ -53,6 +53,14 @@ userSchema.pre("save", async function (next) {
 })
 // Manually typed methods so isPasswordCorrect is an custom defined method
 userSchema.methods.isPasswordCorrect = async function (password) {
+
+    console.log('Input Password:', password);
+    console.log('Hashed Password:', this.password);
+    
+    if (typeof password !== 'string' || typeof this.password !== 'string') {
+        throw new Error('Passwords must be strings.');
+    }
+
     return await bcrypt.compare(password, this.password)
 }
 
@@ -67,7 +75,7 @@ userSchema.methods.generateAccessToken = function () {
         },
         process.env.ACCESS_TOKEN_SECRET,
         {
-            expiresIn: ACCESS_TOKEN_EXPIRY
+            expiresIn: process.env.ACCESS_TOKEN_EXPIRY
         }
     )
 }
@@ -80,7 +88,7 @@ userSchema.methods.generateRefreshToken = function () {
         },
         process.env.REFRESH_TOKEN_SECRET,
         {
-            expiresIn: REFRESH_TOKEN_EXPIRY
+            expiresIn: process.env.REFRESH_TOKEN_EXPIRY
         }
     )
 }
