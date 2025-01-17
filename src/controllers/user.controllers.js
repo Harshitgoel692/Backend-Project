@@ -1,7 +1,7 @@
 import { asyncHandler } from "../utils/asyncHandler.js"
 import { ApiError } from "../utils/ApiError.js"
 import { User } from "../models/user.models.js"
-import { uploadOnCloud } from "../utils/cloudinary.js";
+import { deleteOnCloud, uploadOnCloud } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js"
 
 const generateAccessTokenAndRefreshToken = async (userId) => {
@@ -240,6 +240,7 @@ const updateAccount = asyncHandler(async (req, res) => {
         .json(new ApiResponse(200, user, "Account Updated successfully"))
 })
 
+// Updating Avatar image
 const avatarUpdate = asyncHandler(async (req, res) => {//Yet did not add route for that
     const avatarLocalPath = req.file?.path;
     if (!avatarLocalPath) {
@@ -249,7 +250,17 @@ const avatarUpdate = asyncHandler(async (req, res) => {//Yet did not add route f
     if (!avatar.url) {
         throw new ApiError("Error while uploading image");
     }
-    const user = await User.findByIdAndUpdate(
+
+    const user = await User.findById(req.user?._id);
+    if (!user) {
+        throw new ApiError(404, "User Not Found")
+    }
+    
+    //Deleting old avatar from cloudinary
+    const oldAvatarLaocalPath = req.user?.avatar.url;
+    const deleteAvatar = await deleteOnCloud(oldAvatarLaocalPath);
+
+    const updatedUser = await User.findByIdAndUpdate(
         req.user?._id,
         {
             $set: { avatar: avatar.url }
@@ -258,19 +269,30 @@ const avatarUpdate = asyncHandler(async (req, res) => {//Yet did not add route f
     ).select("-password -refreshToken")
     return res
         .status(200)
-        .json(new ApiResponse(200, user, "File updated successfully"))
+        .json(new ApiResponse(200, updatedUser, "File updated successfully"))
 })
+
+// Updating Cover image
 const coverImageUpdate = asyncHandler(async (req, res) => {//Yet did not add route and middleware for that
     const coverImageLocalPath = req.file?.path;
-    if (!coverImage) {
+    if (!coverImageLocalPath) {
         throw new ApiError(400, "Cover Image File Required");
     }
+
+    //Deleting old cover image from cloudinary
+    const user = await User.findById(req.user?._id);
+    if (!user) {
+        throw new ApiError(404, "User Not Found")
+    }
+    const oldCoverImage = user?.coverImage;
+    const deleteCoverImage = await deleteOnCloud(oldCoverImage);
+    
     const coverImage = await uploadOnCloud(coverImageLocalPath);
     if (!coverImage.url) {
         throw new ApiError("Error while uploading image");
 
     }
-    const user = await User.findByIdAndUpdate(
+    const updatedUser = await User.findByIdAndUpdate(
         req.user?._id,
         {
             $set: { coverImage: coverImage.url }
@@ -279,7 +301,7 @@ const coverImageUpdate = asyncHandler(async (req, res) => {//Yet did not add rou
     ).select("-password -refreshToken")
     return res
         .status(200)
-        .json(new ApiResponse(200, user, "File updated successfully"))
+        .json(new ApiResponse(200, updatedUser, "File updated successfully"))
 })
 
 export { registerUser, loginUser, logOutUser, refreshAccessToken, changeUserPassword, getCurrentUser, updateAccount, avatarUpdate, coverImageUpdate }

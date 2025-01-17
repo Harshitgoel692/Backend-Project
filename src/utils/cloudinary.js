@@ -18,9 +18,26 @@ import fs from "fs"
             fs.unlinkSync(localFilePath)
             return response
         } catch (error) {
-             fs.unlinkSync(localFilePath);
-             return null;
+            fs.unlinkSync(localFilePath);
+            return null;
         }
     }
 
-    export {uploadOnCloud};
+    const deleteOnCloud= async (oldFileToBeDeleted) => {
+        try {
+            if(!oldFileToBeDeleted) return null;
+            const public_id=oldFileToBeDeleted.split('/').pop().split('.')[0];
+            console.log(public_id);
+            const response = cloudinary.uploader.destroy(public_id, {resource_type: "auto"})
+            if(response.result==="ok" || response.result==="not found"){
+                return response;
+            }else{
+                throw new ApiError(500, "Failed to delete file from cloudinary");
+            }
+        } catch (error) {
+            throw new ApiError(500, error?.message || "Server error during file deletion");
+        }   
+        
+    }
+
+    export {uploadOnCloud, deleteOnCloud};
