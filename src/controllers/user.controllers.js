@@ -4,6 +4,7 @@ import { User } from "../models/user.models.js"
 import { deleteOnCloud, uploadOnCloud } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js"
 import mongoose from "mongoose";
+import jwt from "jsonwebtoken";
 
 const generateAccessTokenAndRefreshToken = async (userId) => {
 
@@ -143,7 +144,7 @@ const loginUser = asyncHandler(async (req, res) => {
 const logOutUser = asyncHandler(async (req, res) => {
     await User.findByIdAndUpdate(
         req.user._id,
-        { $set: { refreshToken: "" } },
+        { $unset: { refreshToken: 1 } },
         { new: true }
     )
     const options = {
@@ -180,19 +181,22 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
             throw new ApiError(401, "Refresh Token is expired or used");
 
         }
-        const { accessToken, NewRefreshToken } = await generateAccessTokenAndRefreshToken(user._id);
+        const { accessToken, refreshToken } = await generateAccessTokenAndRefreshToken(user._id);
+        console.log("New Refresh Token", refreshToken);
+        
         const options = {
             httpOnly: true,
             secure: true
         }
+        
         return res
             .status(200)
             .cookie("accessToken", accessToken, options)
-            .cookie("refreshToken", NewRefreshToken, options)
+            .cookie("refreshToken", refreshToken, options)
             .json(
                 new ApiResponse(
                     200,
-                    { accessToken, refreshToken: NewRefreshToken },
+                    { accessToken, refreshToken: refreshToken },
                     "Access Token Refreshed"
                 )
             )
@@ -227,7 +231,7 @@ const getCurrentUser = asyncHandler(async (req, res) => {
 // Updating User Account Profile
 const updateAccount = asyncHandler(async (req, res) => {
     const { fullname, email } = req.body;
-    if (!fullname || !email) {
+    if (!fullname && !email) {
         throw new ApiError(401, "Field is Necessary");
 
     }
@@ -242,7 +246,7 @@ const updateAccount = asyncHandler(async (req, res) => {
 })
 
 // Updating Avatar image
-const avatarUpdate = asyncHandler(async (req, res) => {//Yet did not add route for that
+const avatarUpdate = asyncHandler(async (req, res) => {
     const avatarLocalPath = req.file?.path;
     if (!avatarLocalPath) {
         throw new ApiError(400, "Avatar File Required");
@@ -258,9 +262,13 @@ const avatarUpdate = asyncHandler(async (req, res) => {//Yet did not add route f
     }
     
     //Deleting old avatar from cloudinary
-    const oldAvatarLaocalPath = req.user?.avatar.url;
+    const oldAvatarLaocalPath = req.user?.avatar;
+    console.log("newavatarlocalpath:", avatar.url);
+    
+    console.log("oldavatarlocalpath:", req.user.avatar);
+    
     const deleteAvatar = await deleteOnCloud(oldAvatarLaocalPath);
-    console.log(deleteAvatar);
+    console.log("deleteAvatar:",deleteAvatar);
     
     const updatedUser = await User.findByIdAndUpdate(
         req.user?._id,
@@ -286,15 +294,19 @@ const coverImageUpdate = asyncHandler(async (req, res) => {//Yet did not add rou
     if (!user) {
         throw new ApiError(404, "User Not Found")
     }
-    const oldCoverImage = user?.coverImage;
-    const deleteCoverImage = await deleteOnCloud(oldCoverImage);
-    console.log(deleteAvatar);
+    const oldCoverImage = req.user?.coverImage;
+    if (oldCoverImage) {
+        const deleteCoverImage = await deleteOnCloud(oldCoverImage);
+        console.log("oldcoverimage:",deleteCoverImage);
+    }
 
     const coverImage = await uploadOnCloud(coverImageLocalPath);
     if (!coverImage.url) {
         throw new ApiError("Error while uploading image");
 
     }
+    console.log("coverImagenew",coverImage.url);
+    
     const updatedUser = await User.findByIdAndUpdate(
         req.user?._id,
         {

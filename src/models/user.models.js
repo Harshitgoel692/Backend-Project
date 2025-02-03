@@ -60,7 +60,7 @@ userSchema.methods.isPasswordCorrect = async function (password) {
     if (typeof password !== 'string' || typeof this.password !== 'string') {
         throw new Error('Passwords must be strings.');
     }
-
+    
     return await bcrypt.compare(password, this.password)
 }
 

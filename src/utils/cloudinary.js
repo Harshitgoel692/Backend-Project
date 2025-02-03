@@ -1,5 +1,6 @@
 import {v2 as cloudinary} from "cloudinary"
 import fs from "fs"
+import { ApiError } from "./ApiError.js";
 
     // Configuration
     cloudinary.config({ 
@@ -27,8 +28,8 @@ import fs from "fs"
         try {
             if(!oldFileToBeDeleted) return null;
             const public_id=oldFileToBeDeleted.split('/').pop().split('.')[0];
-            console.log(public_id);
-            const response = cloudinary.uploader.destroy(public_id, {resource_type: "auto"})
+            console.log("public_id:",public_id);
+            const response = await cloudinary.uploader.destroy(public_id );
             if(response.result==="ok" || response.result==="not found"){
                 return response;
             }else{

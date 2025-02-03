@@ -32,6 +32,6 @@ router.route("/get-user").get(validToken, getCurrentUser)
 router.route("/update-account").patch(validToken, updateAccount)
 router.route("/avatar-update").patch(validToken, upload.single("avatar"), avatarUpdate)
 router.route("/coverImage-update").patch(validToken, upload.single("coverImage"), coverImageUpdate)
-router.route("/channel :username").get(validToken, getUserChannel)
+router.route("/channel/:username").get(validToken, getUserChannel)
 router.route("/watch-Histroy").get(validToken, getWatchHistory)
 export default router
