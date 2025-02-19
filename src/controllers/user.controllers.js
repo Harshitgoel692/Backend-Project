@@ -32,23 +32,24 @@ const registerUser = asyncHandler(async (req, res) => {
         [fullname, email, password, username].some((field) => field?.trim() === "")
     ) {
         throw new ApiError(400, "All fields are necesaary");
-    }
-
+    }    
     // Checing if user already exist or not
     const existedUser = await User.findOne({
         $or: [{ username }, { email }]
-    })
+    });
+
     if (existedUser) {
         throw new ApiError(409, "Username or email already exist!!!!");
     }
-
     // Adding cover image and avatar
     const avatarLocalPath = req.files?.avatar[0]?.path;
-
+    
+    
+    
     // const coverImageLocalPath = req.files?.coverImage[0]?.path;
     let coverImageLocalPath;
     if (req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0) {
-        coverImageLocalPath = req.body.coverImage[0].path;
+        coverImageLocalPath = req.files?.coverImage[0]?.path;
     }
     if (!avatarLocalPath) {
         throw new ApiError(400, "Avatar file is necessary");
@@ -232,7 +233,7 @@ const getCurrentUser = asyncHandler(async (req, res) => {
 const updateAccount = asyncHandler(async (req, res) => {
     const { fullname, email } = req.body;
     if (!fullname && !email) {
-        throw new ApiError(401, "Field is Necessary");
+        throw new ApiError(401, "At least oneField is Necessary");
 
     }
     const user = await User.findByIdAndUpdate(req.user?._id,
@@ -392,7 +393,7 @@ const getWatchHistory= asyncHandler(async (req, res) => {
     const user = await User.aggregate([
         {
             $match:{
-            _id: new mongoose.Types.ObjectId(req.user._id),// do not use
+            _id: new mongoose.Types.ObjectId(req.user?._id),// do not use
             }
         },
         {
@@ -430,10 +431,12 @@ const getWatchHistory= asyncHandler(async (req, res) => {
             }
         }
     ])
+    console.log("User in watch history: ", user);
+    
     return res
     .status(200)
     .json(
-        new ApiResponse(200, user[0].getWatchHistory, "Watch History Fetched Successfully")
+        new ApiResponse(200, user[0].watchHistory, "Watch History Fetched Successfully")
     )
 })
 
