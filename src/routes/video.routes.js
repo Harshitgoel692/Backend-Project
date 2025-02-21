@@ -5,14 +5,13 @@ import {
     getVideoById,
     publishAVideo,
     togglePublishStatus,
-    // togglePublishStatus,
     updateVideo,
 } from "../controllers/video.controllers.js"
 import {validToken} from "../middlewares/auth.middleware.js"
 import {upload} from "../middlewares/multer.middleware.js"
 
 const router = Router();
-router.use(validToken); // Apply verifyJWT middleware to all routes in this file
+router.use(validToken); // Apply validToken middleware to all routes in this file
 
 router
     .route("/")
