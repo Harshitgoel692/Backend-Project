@@ -120,7 +120,8 @@ const loginUser = asyncHandler(async (req, res) => {
     const { accessToken, refreshToken } = await generateAccessTokenAndRefreshToken(user._id);
 
     const logedInUser = await User.findById(user._id).select("-password -refreshToken");
-
+    console.log("Logged in user is: ", logedInUser);
+    
     // options for cookies security which is saved in server only
     const options = {
         httpOnly: true,
