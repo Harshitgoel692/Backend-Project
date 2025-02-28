@@ -104,14 +104,34 @@ const getLikedVideos = asyncHandler(async (req, res) => {
                         },
                     },
                     {
-                        $unwind: "$owner"
+                        $addFields:{
+                            owner:{
+                                $first:"$owner"
+                            }
+                        }
+                    },
+                    {
+                        $project: 
+                        {
+                            _id: 1,
+                            videoFile: 1,
+                            thumbnail: 1,
+                            duration: 1,
+                            views: 1,
+                            title: 1,
+                            description: 1,
+                            createdAt: 1 ,
+                            isPublished:1,
+                            owner:{
+                            username:1,
+                            avatar:1,
+                        }
+                    }
                     }
                 ]
             }
         },
-        {
-            $unwind: "$likedVideos"
-        },
+        
         {
             $sort:{
                 createdAt: -1
@@ -120,29 +140,17 @@ const getLikedVideos = asyncHandler(async (req, res) => {
         {
             $project:{
                 _id:0,
-                likedVideos:{
-                    _id: 1,
-                    videoFile: 1,
-                    thumbnail: 1,
-                    duration: 1,
-                    views: 1,
-                    title: 1,
-                    description: 1,
-                    createdAt: 1 ,
-                    isPublished:1
-                },
-                owner:{
-                    username:1,
-                    avatar:1,
-                }
+                likedVideos:1
             }
         }
     ]);
+    console.log("All liked videos are: ", videoLiked[0]);
+    
     if(!videoLiked){
         throw new ApiError(400, "Liked Videos Not found");
         
     }
-    return res.status(200).json(new ApiResponse(200, videoLiked, "Liked Videos Fetched Successfully"))
+    return res.status(200).json(new ApiResponse(200, videoLiked[0], "Liked Videos Fetched Successfully"))
 })
 
 export { toggleVideoLike, toggleCommentLike, toggleTweetLike, getLikedVideos}
