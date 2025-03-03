@@ -42,7 +42,7 @@ const getUserPlaylists = asyncHandler(async (req, res) => {
         {
             $lookup:{
                 from: "videos",
-                localField: "video",
+                localField: "videos",
                 foreignField: "_id",
                 as: "playlistVideos"
             }
@@ -83,7 +83,7 @@ const getPlaylistById = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Invalid Playlist Id");
         
     }
-    const playlist= await Playlist.findById(playlistId);
+    const playlist= await Playlist.findById(playlistId).populate("videos", "videoFile thumbnail title views isPublished owner createdAt duration _id");
     if(!playlist){
         throw new ApiError(404, "Playlist not found");
         
@@ -127,15 +127,19 @@ const addVideoToPlaylist = asyncHandler(async (req, res) => {
         },
         {new : true}
 
-    );
-    console.log("Video added in playlist is :", addedVideo);
-    if(!addingVideo){
+    ).populate("videos", "videoFile thumbnail title views isPublished owner createdAt duration _id");
+    if(!addedVideo){
         throw new ApiError(500, "Error while adding the video");
         
     }
+    // console.log("all about playl");
+    
+    const allVideos =   [...addedVideo.videos];
+    console.log("Video added in playlist is :", allVideos);
+
     return res
     .status(200)
-    .json(new ApiResponse(200, addedVideo, "Video Added successfully"))
+    .json(new ApiResponse(200, allVideos, "Video Added successfully"))
 })
 
 const removeVideoFromPlaylist = asyncHandler(async (req, res) => {
@@ -168,15 +172,18 @@ const removeVideoFromPlaylist = asyncHandler(async (req, res) => {
             }
         },
         {new: true}
-    );
+    ).populate("videos", "videoFile thumbnail title views isPublished owner createdAt duration _id");
     console.log("Video removed from playlist :", removedVideo);
     if(!removedVideo){
         throw new ApiError(500, "Error while removing the video");
         
     }
+    const removedVideos =   [...removedVideo.videos];
+    console.log("Video added in playlist is :", removedVideos);
+
     return res
     .status(200)
-    .json(new ApiResponse(200, removedVideo, "Video removed successfully"))
+    .json(new ApiResponse(200, removedVideos, "Video removed successfully"))
 
 })
 
@@ -213,6 +220,9 @@ const updatePlaylist = asyncHandler(async (req, res) => {
     const playlist = await Playlist.findById(playlistId);
     if(!playlist){
         throw new ApiError(400, "Playlist not found");
+    }
+    if (playlist.owner?.toString()!==req.user?._id.toString()) {
+        throw new ApiError(401, "Not playlist owner");
     }
     const updatedPlaylist = await Playlist.findByIdAndUpdate(
         playlist?._id,
